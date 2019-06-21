@@ -4,13 +4,15 @@ In this lab you will build an entire AWS system with terraform
 ## Task 1: Install Terraform
 In this task you will install Terraform
 
-1. Create an EC2 instance (create and download a key pair named firstname-lastname-l8-key) and SSH into it, then execute the command: `sudo unzip https://releases.hashicorp.com/terraform/0.12.2/terraform_0.12.2_linux_amd64.zip -d /usr/bin/`.
+1. Set your region to us-east-1 (N. Virginia, everyone can use this region for this lab) and create an EC2 instance (name the instance firstname-lastname-lab9-host, and create and download a key pair named firstname-lastname-l8-key) and SSH into it, then execute the commands: `wget https://releases.hashicorp.com/terraform/0.12.2/terraform_0.12.2_linux_amd64.zip` and `sudo unzip terraform_0.12.2_linux_amd64.zip -d /usr/bin/`.
 
-1. Execute the command `nano` and paste in the content below (replace your-region and firstname-lastname):
+Now Terraform is installed.
+
+2. Execute the command `nano` and paste in the content below (replace firstname-lastname with your firstname and lastname):
 
 ```tf
 provider "aws" {
-  region = "your-region"
+  region = "us-east-1"
 }
 
 resource "aws_instance" "firstname-lastname-lab9" {
@@ -18,20 +20,12 @@ resource "aws_instance" "firstname-lastname-lab9" {
   instance_type = "t2.micro"
 }
 ```
-Creat a main.tf file and you'll see it has a config to create a basic EC2 instance
 
-```hcl
-provider "aws" {
-  region = "us-east-1"
-}
+This is a very simple configuration to create a basic EC2 instance
 
-resource "aws_instance" "web-server" {
-  ami = "ami-2d39803a"
-  instance_type = "t2.micro"
-}
-```
+3. Type Ctrl-O and save the file as main.tf and then type Ctrl-X to exit
 
-Let's go ahead and create it with the commands:
+4. First create a new access key and secret key and execute some commands to set them in environment variables.  Execute the commands: `export AWS_ACCESS_KEY_ID=MYACCESSKEYID` and `export AWS_SECRET_ACCESS_KEY=MYSECRETACCESSKEY` (replace the values with your access key values).  Then let's go ahead and create it with the commands:
 
 ```bash
 terraform init
@@ -41,29 +35,37 @@ terraform apply
 Once the output indicates the resources have been created you can view it in the Services->EC2 section
 (make sure you have set your region to N.Virginia in the top right region selector, N.Virgina is us-east-1).
 
-### Update the instance (add a name)
+## Task 2: Update the instance (add a name)
 
-When you view the instance, notice that it doesn't currently have a name.  That is easy to fix, update the 
-configuration to:
+1. When you view the instance, notice that it doesn't currently have a name.  That is easy to fix, update the 
+configuration to (using `nano main.tf`):
 
 ```hcl
-resource "aws_instance" "web-server" {
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "firstname-lastname-lab9" {
   ami = "ami-2d39803a"
   instance_type = "t2.micro"
-  tags {
-    Name = "terraform-web-server"
+  tags = {
+    Name = "firstname-lastname-l9-ws"
   }
 }
 ```
 
-Great, now if you view the instance again you should see it's name appears as you've entered it (feel free to experiment with renaming it).
+Great, now if you view the instance again you should see it's name appears as you've entered it (feel free to experiment with renaming it, but change it back when you're done).
 
-### Give the instance a simple start-up script to provide a basic web-server
+## Task 3: Give the instance a simple start-up script to provide a basic web-server
 
-Next, let's set a start-up script using the user_data attribute (For background see: [User Data description](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html), [user_data attribute](https://www.terraform.io/docs/providers/aws/r/instance.html#user_data)).  We'll use the heredoc string format to allow us the have the string span multiple lines ([heredoc strings](https://www.terraform.io/docs/configuration-0-11/variables.html#strings))
+1. Next, let's set a start-up script using the user_data attribute (For background see: [User Data description](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html), [user_data attribute](https://www.terraform.io/docs/providers/aws/r/instance.html#user_data)).  We'll use the heredoc string format to allow us the have the string span multiple lines ([heredoc strings](https://www.terraform.io/docs/configuration-0-11/variables.html#strings)).  Update main.tf with nano: `nano main.tf`
 
 ```hcl
-resource "aws_instance" "web-server" {
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "firstname-lastname-lab9" {
   ami = "ami-2d39803a"
   instance_type = "t2.micro"
 
@@ -73,19 +75,38 @@ resource "aws_instance" "web-server" {
               nohup busybox httpd -f -p 8080 &
               EOF
 
-  tags {
-    Name = "terraform-web-server"
+  tags = {
+    Name = "firstname-lastname-l9-ws"
   }
 }
 ```
 
-### Set up a security group to allow external traffic to reach the instance
+## Task 4: Set up a security group to allow external traffic to reach the instance
 
-Before we'll be able to actually connect to the instance via HTTP we'll need to add a [Security group](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html).  The resource for that is [aws_security_group](https://www.terraform.io/docs/providers/aws/r/security_group.html)
+1. Before we'll be able to actually connect to the instance via HTTP we'll need to add a [Security group](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html).  The resource for that is [aws_security_group](https://www.terraform.io/docs/providers/aws/r/security_group.html).  Update main.tf with nano: `nano main.tf`
 
 ```hcl
-resource "aws_security_group" "web-server" {
-  name = "terraform-ws-sg"
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "firstname-lastname-lab9" {
+  ami = "ami-2d39803a"
+  instance_type = "t2.micro"
+
+  user_data = <<-EOF
+              #!/bin/bash
+              echo "Hello, World" > index.html
+              nohup busybox httpd -f -p 8080 &
+              EOF
+
+  tags = {
+    Name = "firstname-lastname-l9-ws"
+  }
+}
+
+resource "aws_security_group" "firstname-lastname-lab9" {
+  name = "firstname-lastname-ws-sg"
   ingress {
     from_port = 8080
     to_port = 8080
@@ -96,9 +117,9 @@ resource "aws_security_group" "web-server" {
 ```
 Notice we're allowing connection on 8080 via tcp and using the source [CIDR](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing) 0.0.0.0/0 (corresponds to allowing traffic on tcp:8080 from all possible source IP addresses)
 
-### Minimize duplication (and increase modularity/flexibility) by factoring out variable
+## Task 5: Minimize duplication (and increase modularity/flexibility) by factoring out variable
 
-Create a variables.tf file and add the following variable
+1. Create a variables.tf file (with `nano`) and add the following variable
 
 ```hcl
 variable "server_port" {
@@ -109,9 +130,9 @@ variable "server_port" {
 
 Then update the other places the 8080 is being used and replace with "${var.server_port}" (don't worry, terraform does automatic type switching between strings and other types in string form when required)
 
-### Update instance to use security group
+## Task 6: Update instance to use security group
 
-Now that we've created the security group we need to update the EC2 instance to use it via the attribute [vpc_security_group_ids](https://www.terraform.io/docs/providers/aws/r/instance.html#vpc_security_group_ids)
+1. Now that we've created the security group we need to update the EC2 instance to use it via the attribute [vpc_security_group_ids](https://www.terraform.io/docs/providers/aws/r/instance.html#vpc_security_group_ids)
 
 Add the attribute to the EC2 instance resource
 

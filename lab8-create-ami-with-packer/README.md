@@ -4,7 +4,9 @@ In this lab you will use Packer to create an AMI
 ## Task 1: Insstall Packer
 In this task you will install Packer on either your local environment or on an EC2 instance
 
-1. Create an EC2 instance (create and download a key pair named firstname-lastname-l8-key) and SSH into it, then execute the command: `sudo unzip https://releases.hashicorp.com/packer/1.4.1/packer_1.4.1_linux_amd64.zip -d /usr/bin/`.
+1. Create an EC2 instance (create and download a key pair named firstname-lastname-l8-key) and SSH into it, then execute the commands: `wget https://releases.hashicorp.com/packer/1.4.1/packer_1.4.1_linux_amd64.zip` and then `sudo unzip packer_1.4.1_linux_amd64.zip -d /usr/bin/`.
+
+Now Packer is installed.
 
 ## Task 2: Set up Packer for run
 
