@@ -32,20 +32,20 @@ ec2 = boto3.resource('ec2')
 # Loop through each instance
 for instance in ec2.instances.all():
   state = instance.state['Name']
-  if instance.tags is not None
+  if instance.tags is not None:
     for tag in instance.tags:
 
       # Check for the 'stopinator' tag
       if tag['Key'] == 'firstname-lastname-lab7-tag':
-        action = tag['Value'].lower()
+        value = tag['Value'].lower()
         
         # Stop?
-        if action == 'stop-me' and state == 'running':
+        if value == 'stop-me' and state == 'running':
           print "Stopping instance", instance.id
           instance.stop()
 ```
 
-See if you can read the script, it is running through all the instances in the default region and checking to see if they have tags, and if they do, checking if they have a tag matching firstname-lastname-lab7-tag and if they do and the value is stop-me and they are in the running state then it is stopping those instances
+Try to read and understand the script, it is running through all the instances in the default region and checking to see if they have tags, and if they do, checking if they have a tag matching firstname-lastname-lab7-tag and if they do and the value is stop-me and they are in the running state then it is stopping those instances
 
 3. Type Ctrl-O to save the file, give it the name stopinator.py and hit return, then Ctrl-X to exit nano
 
