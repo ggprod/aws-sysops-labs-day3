@@ -1,0 +1,1 @@
+# Lab 8: Create AMI with Packer
