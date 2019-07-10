@@ -4,7 +4,7 @@ In this lab you will build an entire AWS system with terraform
 ## Task 1: Install Terraform
 In this task you will install Terraform
 
-1. Set your region to us-east-1 (N. Virginia, everyone can use this region for this lab) and create an EC2 instance (name the instance firstname-lastname-lab9-host, and create and download a key pair named firstname-lastname-l8-key) and SSH into it, then execute the commands: `wget https://releases.hashicorp.com/terraform/0.12.2/terraform_0.12.2_linux_amd64.zip` and `sudo unzip terraform_0.12.2_linux_amd64.zip -d /usr/bin/`.
+1. Set your region to us-east-1 (N. Virginia, everyone can use this region for this lab) and create an EC2 instance (name the instance firstname-lastname-lab9-host, and create and download a key pair named firstname-lastname-l8-key) and SSH into it, then execute the commands: `wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip` and `sudo unzip terraform_0.11.14_linux_amd64.zip -d /usr/bin/`.
 
 Now Terraform is installed.
 
@@ -128,7 +128,7 @@ variable "server_port" {
 }
 ```
 
-Then update the other places the 8080 is being used in **main.tf** and replace with **var.server_port** (for non-strings) and **"${var.server_port}"** 
+Then update the other places the 8080 is being used in **main.tf** and replace with "${var.server_port}" (don't worry, terraform does automatic type switching between strings and other types in string form when required)
 
 ## Task 6: Update instance to use security group
 
@@ -137,7 +137,7 @@ Then update the other places the 8080 is being used in **main.tf** and replace w
 Add the attribute to the EC2 instance resource
 
 ```hcl
-vpc_security_group_ids = [aws_security_group.firstname-lastname-lab9.id]
+vpc_security_group_ids = ["${aws_security_group.firstname-lastname-lab9.id}"]
 ```
 
 Remember to change firstname-lastname to your firstname and lastname
@@ -155,7 +155,7 @@ Once the terraform apply completes, then look up the public IPv4 address of your
 
 ```hcl
 output "public_ip" {
-  value = aws_instance.mark-pevec-lab9.public_ip
+  value = "${aws_instance.mark-pevec-lab9.public_ip}"
 }
 ```
 
@@ -177,7 +177,7 @@ First add the launch configuration (to main.tf):
 resource "aws_launch_configuration" "firstname-lastname-lab9" {
   image_id = "ami-2d39803a"
   instance_type = "t2.micro"
-  security_groups = [aws_security_group.firstname-lastname-lab9.id]
+  security_groups = ["${aws_security_group.firstname-lastname-lab9.id}"]
   user_data = <<-EOF
               #!/bin/bash
               echo "Hello, World" > index.html
@@ -205,8 +205,8 @@ lifecycle {
 data "aws_availability_zones" "all" {}
 
 resource "aws_autoscaling_group" "firstname-lastname-lab9" {
-  launch_configuration = aws_launch_configuration.firstname-lastname-lab9.id
-  availability_zones = data.aws_availability_zones.all.names
+  launch_configuration = "${aws_launch_configuration.firstname-lastname-lab9.id}"
+  availability_zones = ["${data.aws_availability_zones.all.names}"]
   min_size = 2
   max_size = 10
   tag {
@@ -226,11 +226,11 @@ The ACG will autoscale between 2-10 instances based on traffic and will spread t
 ```hcl
 resource "aws_elb" "firstname-lastname-lab9" {
   name = "firstname-lastname-lab9-elb"
-  availability_zones = data.aws_availability_zones.all.names
+  availability_zones = ["${data.aws_availability_zones.all.names}"]
   listener {
     lb_port = 80
     lb_protocol = "http"
-    instance_port = var.server_port
+    instance_port = "${var.server_port}"
     instance_protocol = "http"
   }
 }
@@ -253,7 +253,7 @@ resource "aws_security_group" "firstname-lastname-lab9-elb" {
 and then we need to add it to our aws_elb resource:
 
 ```hcl
-security_groups = [aws_security_group.firstname-lastname-lab9-elb.id]
+security_groups = ["${aws_security_group.firstname-lastname-lab9-elb.id}"]
 ```
 
 3. You can also add a health-check from the ELB to the instances in the ASG where it pings them periodically and if they don't respond they are considered unhealthy and the ELB won't route traffic to them
@@ -284,7 +284,7 @@ egress {
 4. Now we need to update the ASG to register instances with the ELB (so the ELB knows who to health-check).  We can also update the ASG to use the same health-checker as the ELB and to try restarting instances that aren't healthy.  Add the following to the config for the aws_autoscaling_group
 
 ```hcl
-load_balancers = [aws_elb.firstname-lastname-lab9.name]
+load_balancers = ["${aws_elb.firstname-lastname-lab9.name}"]
 health_check_type = "ELB"
 ```
 
@@ -292,7 +292,7 @@ Finally, let's add an output to give us the DNS name generated for the ELB so we
 
 ```hcl
 output "elb_dns_name" {
-  value = aws_elb.firstname-lastname-lab9.dns_name
+  value = "${aws_elb.firstname-lastname-lab9.dns_name}"
 }
 ```
 
